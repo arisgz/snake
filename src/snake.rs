@@ -175,12 +175,20 @@ impl Snake {
         );
     }
 
-    fn paint_body(&self, painter: &Painter, x: u32, y: u32, rect: Rect) {
+    fn paint_body(&self, painter: &Painter, x: u32, y: u32, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
+        let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / 150.0);
         if (x, y) == *front {
+            match self.direction {
+                Direction::Up => rect.min.y += offset,
+                Direction::Down => rect.max.y -= offset,
+                Direction::Left => rect.min.x += offset,
+                Direction::Right => rect.max.x -= offset,
+            };
+
             painter.rect_filled(rect, 0.0, BODY_COLOR);
-            
+
             let succ = self.body[1];
             if front.0 == succ.0 {
                 Snake::paint_lr_border(painter, rect);
@@ -188,8 +196,8 @@ impl Snake {
                 Snake::paint_tb_border(painter, rect);
             }
         } else if (x, y) == *back {
-            painter.rect_filled(rect, 0.0, BODY_COLOR);
             let prev = self.body[self.body.len() - 2];
+            painter.rect_filled(rect, 0.0, BODY_COLOR);
             if back.0 == prev.0 {
                 Snake::paint_lr_border(painter, rect);
             } else {
