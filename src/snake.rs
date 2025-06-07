@@ -132,7 +132,7 @@ impl App for Snake {
                     }
 
                     if self.body.contains(&(j, i)) {
-                        self.paint_body(&painter, j, i, &cell);
+                        self.paint_body(&painter, j, i, cell);
                     }
                 }
             }
@@ -143,7 +143,7 @@ impl App for Snake {
 }
 
 impl Snake {
-    fn paint_lr_border(painter: &Painter, rect: &Rect) {
+    fn paint_lr_border(painter: &Painter, rect: Rect) {
         let y0 = rect.top();
         let y1 = rect.bottom();
         let x0 = rect.left() - 0.5;
@@ -159,7 +159,7 @@ impl Snake {
         );
     }
 
-    fn paint_tb_border(painter: &Painter, rect: &Rect) {
+    fn paint_tb_border(painter: &Painter, rect: Rect) {
         let y0 = rect.top() - 0.5;
         let y1 = rect.bottom() + 0.5;
         let x0 = rect.left();
@@ -175,11 +175,12 @@ impl Snake {
         );
     }
 
-    fn paint_body(&self, painter: &Painter, x: u32, y: u32, rect: &Rect) {
+    fn paint_body(&self, painter: &Painter, x: u32, y: u32, rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
         if (x, y) == *front {
-            painter.rect_filled(*rect, 0.0, BODY_COLOR);
+            painter.rect_filled(rect, 0.0, BODY_COLOR);
+            
             let succ = self.body[1];
             if front.0 == succ.0 {
                 Snake::paint_lr_border(painter, rect);
@@ -187,7 +188,7 @@ impl Snake {
                 Snake::paint_tb_border(painter, rect);
             }
         } else if (x, y) == *back {
-            painter.rect_filled(*rect, 0.0, BODY_COLOR);
+            painter.rect_filled(rect, 0.0, BODY_COLOR);
             let prev = self.body[self.body.len() - 2];
             if back.0 == prev.0 {
                 Snake::paint_lr_border(painter, rect);
@@ -203,10 +204,10 @@ impl Snake {
 
                 if prev.0 == succ.0 && prev.1 != succ.1 {
                     Snake::paint_lr_border(painter, rect);
-                    painter.rect_filled(*rect, 0.0, BODY_COLOR);
+                    painter.rect_filled(rect, 0.0, BODY_COLOR);
                 } else if prev.1 == succ.1 && prev.0 != succ.0 {
                     Snake::paint_tb_border(painter, rect);
-                    painter.rect_filled(*rect, 0.0, BODY_COLOR);
+                    painter.rect_filled(rect, 0.0, BODY_COLOR);
                 } else {
                     let corner = Snake::get_corner(&prev, &current, &succ);
                     Snake::draw_one_rounded_corner_rect(painter, rect, corner);
@@ -233,7 +234,7 @@ impl Snake {
         }
     }
 
-    fn draw_one_rounded_corner_rect(painter: &Painter, rect: &Rect, corner: Corner) {
+    fn draw_one_rounded_corner_rect(painter: &Painter, rect: Rect, corner: Corner) {
         let rounding = match corner {
             Corner::TopLeft => CornerRadiusF32 {
                 nw: RADIUS,
@@ -261,7 +262,7 @@ impl Snake {
             },
         };
 
-        painter.rect_filled(*rect, rounding, BODY_COLOR);
+        painter.rect_filled(rect, rounding, BODY_COLOR);
     }
 
     fn generate_fruit(&mut self) {
