@@ -197,6 +197,21 @@ impl Snake {
             }
         } else if (x, y) == *back {
             let prev = self.body[self.body.len() - 2];
+            let dir = if prev.0 < x {
+                Direction::Left
+            } else if prev.0 > x {
+                Direction::Right
+            } else if prev.1 < y {
+                Direction::Up
+            } else {
+                Direction::Down
+            };
+            match dir {
+                Direction::Up => rect.max.y += offset-rect.width(),
+                Direction::Down => rect.min.y -= offset-rect.width(),
+                Direction::Left => rect.max.x += offset-rect.width(),
+                Direction::Right => rect.min.x -= offset-rect.width(),
+            };
             painter.rect_filled(rect, 0.0, BODY_COLOR);
             if back.0 == prev.0 {
                 Snake::paint_lr_border(painter, rect);
@@ -332,7 +347,7 @@ impl Snake {
             }
         };
 
-        if self.body.contains(&new_head) {
+        if self.body.contains(&new_head) && self.body.back().unwrap() != &new_head {
             self.game_over = true;
             return;
         }
