@@ -1,5 +1,5 @@
-use eframe::egui::{Color32, Context, Id, Painter, Rect, Stroke};
-use eframe::epaint::{CornerRadiusF32};
+use eframe::egui::{pos2, vec2, Color32, Context, Id, Painter, Rect, Stroke};
+use eframe::epaint::{CornerRadiusF32, StrokeKind};
 use eframe::{App, Frame, egui};
 use rand::Rng;
 use std::collections::VecDeque;
@@ -107,6 +107,15 @@ impl App for Snake {
 
             let rect = response.rect;
 
+            {
+                let min=rect.width().min(rect.height());
+                let wrapping_rect = Rect::from_min_size(
+                    pos2(rect.left(), rect.top()),
+                    vec2(min, min)
+                );
+                painter.rect_stroke(wrapping_rect, 0.0, Stroke::new(1.0, Color32::from_gray(0)), StrokeKind::Outside);
+            }
+
             let cell_size = rect.width().min(rect.height()) / GRID_SIZE as f32;
 
             for i in 0..GRID_SIZE as u32 {
@@ -115,17 +124,9 @@ impl App for Snake {
                     let y = rect.top() + i as f32 * cell_size;
 
                     let cell = Rect::from_min_size(
-                        egui::pos2(x, y),
-                        egui::vec2(cell_size, cell_size),
+                        pos2(x, y),
+                        vec2(cell_size, cell_size),
                     );
-
-                    // Print backgroud grid
-                    // painter.rect_stroke(
-                    //     cell,
-                    //     0.0,
-                    //     Stroke::new(0.5, Color32::LIGHT_GRAY),
-                    //     StrokeKind::Inside,
-                    // );
 
                     if self.apple == (j, i) {
                         painter.circle_filled(cell.center(), cell_size / 2.0, APPLE_COLOR);
