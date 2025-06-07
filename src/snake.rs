@@ -179,7 +179,7 @@ impl Snake {
     fn paint_body(&self, painter: &Painter, x: u32, y: u32, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
-        let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / 150.0);
+        let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
         if (x, y) == *front {
             match self.direction {
                 Direction::Up => rect.min.y += offset,
