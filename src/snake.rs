@@ -108,10 +108,10 @@ impl App for Snake {
             let rect = response.rect;
 
             {
-                let min=rect.width().min(rect.height());
+                let min = rect.width().min(rect.height());
                 let wrapping_rect = Rect::from_min_size(
                     pos2(rect.left(), rect.top()),
-                    vec2(min, min)
+                    vec2(min, min),
                 );
                 painter.rect_stroke(wrapping_rect, 0.0, Stroke::new(1.0, Color32::from_gray(0)), StrokeKind::Outside);
             }
@@ -208,10 +208,10 @@ impl Snake {
                 Direction::Down
             };
             match dir {
-                Direction::Up => rect.max.y += offset-rect.width(),
-                Direction::Down => rect.min.y -= offset-rect.width(),
-                Direction::Left => rect.max.x += offset-rect.width(),
-                Direction::Right => rect.min.x -= offset-rect.width(),
+                Direction::Up => rect.max.y += offset - rect.width(),
+                Direction::Down => rect.min.y -= offset - rect.width(),
+                Direction::Left => rect.max.x += offset - rect.width(),
+                Direction::Right => rect.min.x -= offset - rect.width(),
             };
             painter.rect_filled(rect, 0.0, BODY_COLOR);
             if back.0 == prev.0 {
