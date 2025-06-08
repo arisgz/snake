@@ -36,6 +36,7 @@ pub struct Snake {
     directions_queue: VecDeque<Direction>,
     game_over: bool,
     score: u32,
+    growing: bool,
 }
 
 impl Default for Snake {
@@ -48,6 +49,7 @@ impl Default for Snake {
             last_update: Instant::now(),
             game_over: false,
             score: 0,
+            growing: false,
         };
         snake
             .body
@@ -176,7 +178,7 @@ impl Snake {
         );
     }
 
-    fn paint_body(&self, painter: &Painter, x: u32, y: u32, mut rect: Rect) {
+    fn paint_body(&mut self, painter: &Painter, x: u32, y: u32, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
         let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
@@ -198,21 +200,24 @@ impl Snake {
             }
         } else if (x, y) == *back {
             let prev = self.body[self.body.len() - 2];
-            let dir = if prev.0 < x {
-                Direction::Left
-            } else if prev.0 > x {
-                Direction::Right
-            } else if prev.1 < y {
-                Direction::Up
-            } else {
-                Direction::Down
-            };
-            match dir {
-                Direction::Up => rect.max.y += offset - rect.width(),
-                Direction::Down => rect.min.y -= offset - rect.width(),
-                Direction::Left => rect.max.x += offset - rect.width(),
-                Direction::Right => rect.min.x -= offset - rect.width(),
-            };
+            if !self.growing {
+                self.growing = false;
+                let dir = if prev.0 < x {
+                    Direction::Left
+                } else if prev.0 > x {
+                    Direction::Right
+                } else if prev.1 < y {
+                    Direction::Up
+                } else {
+                    Direction::Down
+                };
+                match dir {
+                    Direction::Up => rect.max.y += offset - rect.width(),
+                    Direction::Down => rect.min.y -= offset - rect.width(),
+                    Direction::Left => rect.max.x += offset - rect.width(),
+                    Direction::Right => rect.min.x -= offset - rect.width(),
+                };
+            }
             painter.rect_filled(rect, 0.0, BODY_COLOR);
             if back.0 == prev.0 {
                 Snake::paint_lr_border(painter, rect);
@@ -358,8 +363,12 @@ impl Snake {
         if new_head == self.apple {
             self.score += 1;
             self.generate_fruit();
-        } else {
+            self.growing = true;
             self.body.pop_back();
+        } else if !self.growing {
+            self.body.pop_back();
+        } else {
+            self.growing = false;
         }
     }
 
