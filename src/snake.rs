@@ -51,12 +51,16 @@ impl Default for Snake {
             score: 0,
             growing: false,
         };
+        let middle = GRID_SIZE as u32 / 2;
         snake
             .body
-            .push_front((GRID_SIZE as u32 / 2, GRID_SIZE as u32 / 2));
+            .push_front((middle, middle + 1));
         snake
             .body
-            .push_front((GRID_SIZE as u32 / 2, GRID_SIZE as u32 / 2 - 1));
+            .push_front((middle, middle));
+        snake
+            .body
+            .push_front((middle, middle - 1));
         snake.generate_fruit();
         snake
     }
