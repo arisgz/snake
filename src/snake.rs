@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use crate::snake::Corner::{BottomLeft, BottomRight, TopLeft, TopRight};
 
 const GRID_SIZE: usize = 15;
-const FRAME_MS: u64 = 150;
+const FRAME_MS: u64 = 130;
 const RADIUS: f32 = 10.0;
 const APPLE_COLOR: Color32 = Color32::RED;
 const BODY_COLOR: Color32 = Color32::YELLOW;
