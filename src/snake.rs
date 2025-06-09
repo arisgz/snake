@@ -4,7 +4,6 @@ use eframe::{App, Frame, egui};
 use rand::Rng;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
-use crate::snake::Corner::{BottomLeft, BottomRight, TopLeft, TopRight};
 
 const GRID_SIZE: usize = 15;
 const FRAME_MS: u64 = 130;
@@ -291,14 +290,14 @@ impl Snake {
         let last_dir_vertical = current.x == prev.x;
 
         match (dx.signum(), dy.signum(), last_dir_vertical) {
-            (-1, -1, true) => BottomLeft, // left -> top, last top
-            (-1, -1, false) => TopRight, // left -> top, last left
-            (-1, 1, true) => TopLeft, // left -> bottom, last bottom
-            (-1, 1, false) => BottomRight, // left -> bottom, last left
-            (1, 1, true) => TopRight, // right -> bottom, last bottom
-            (1, 1, false) => BottomLeft, // right -> bottom, last right
-            (1, -1, true) => BottomRight, // right -> top, last top
-            (1, -1, false) => TopLeft, // right -> top, last right
+            (-1, -1, true) => Corner::BottomLeft, // left -> top, last top
+            (-1, -1, false) => Corner::TopRight, // left -> top, last left
+            (-1, 1, true) => Corner::TopLeft, // left -> bottom, last bottom
+            (-1, 1, false) => Corner::BottomRight, // left -> bottom, last left
+            (1, 1, true) => Corner::TopRight, // right -> bottom, last bottom
+            (1, 1, false) => Corner::BottomLeft, // right -> bottom, last right
+            (1, -1, true) => Corner::BottomRight, // right -> top, last top
+            (1, -1, false) => Corner::TopLeft, // right -> top, last right
             _ => unreachable!(),
         }
     }
