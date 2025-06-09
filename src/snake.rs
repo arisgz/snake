@@ -193,7 +193,7 @@ impl App for Snake {
 
             let cell_size = rect.width().min(rect.height()) / GRID_SIZE as f32;
 
-            for body_part in self.body.clone().iter() {
+            for body_part in &self.body {
                 let x = rect.left() + body_part.x as f32 * cell_size;
                 let y = rect.top() + body_part.y as f32 * cell_size;
 
@@ -252,7 +252,7 @@ impl Snake {
         );
     }
 
-    fn paint_body(&mut self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
+    fn paint_body(& self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
         let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
