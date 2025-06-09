@@ -79,12 +79,12 @@ struct BodyPart {
 }
 
 impl BodyPart {
-    fn new(x: u32, y: u32, direction: Direction, corner: Corner) -> Self {
+    fn new(x: u32, y: u32, direction: Direction) -> Self {
         Self {
             x,
             y,
             direction,
-            corner,
+            corner:Corner::None,
         }
     }
 
@@ -123,13 +123,13 @@ impl Default for Snake {
         let middle = GRID_SIZE as u32 / 2;
         snake
             .body
-            .push_front(BodyPart::new(middle, middle + 1, Direction::Up, Corner::None));
+            .push_front(BodyPart::new(middle, middle + 1, Direction::Up));
         snake
             .body
-            .push_front(BodyPart::new(middle, middle, Direction::Up, Corner::None));
+            .push_front(BodyPart::new(middle, middle, Direction::Up));
         snake
             .body
-            .push_front(BodyPart::new(middle, middle - 1, Direction::Up, Corner::None));
+            .push_front(BodyPart::new(middle, middle - 1, Direction::Up));
         snake.generate_fruit();
         snake
     }
@@ -287,48 +287,8 @@ impl Snake {
                 Snake::paint_tb_border(painter, rect);
             }
         } else {
-            // bend
-            if let Some(index) = self.body.iter().position(|r| *r == *bodypart) {
-                let prev = &self.body[index - 1];
-                let succ = &self.body[index + 1];
-                let current = &self.body[index];
-
-                if prev.x == succ.x && prev.y != succ.y {
-                    Snake::paint_lr_border(painter, rect);
-                    painter.rect_filled(rect, 0.0, BODY_COLOR);
-                } else if prev.y == succ.y && prev.x != succ.x {
-                    Snake::paint_tb_border(painter, rect);
-                    painter.rect_filled(rect, 0.0, BODY_COLOR);
-                } else {
-                    let corner = Snake::get_corner(&prev, &current, &succ);
-                    Snake::draw_one_rounded_corner_rect(painter, rect, corner);
-                };
-            }
+            painter.rect_filled(rect, bodypart.corner.get_corner_radius(), BODY_COLOR);
         }
-    }
-
-    fn get_corner(prev: &BodyPart, current: &BodyPart, succ: &BodyPart) -> Corner {
-        let dx = prev.x as i32 - succ.x as i32;
-        let dy = prev.y as i32 - succ.y as i32;
-        let last_dir_vertical = current.x == prev.x;
-
-        match (dx.signum(), dy.signum(), last_dir_vertical) {
-            (-1, -1, true) => Corner::BottomLeft, // left -> top, last top
-            (-1, -1, false) => Corner::TopRight, // left -> top, last left
-            (-1, 1, true) => Corner::TopLeft, // left -> bottom, last bottom
-            (-1, 1, false) => Corner::BottomRight, // left -> bottom, last left
-            (1, 1, true) => Corner::TopRight, // right -> bottom, last bottom
-            (1, 1, false) => Corner::BottomLeft, // right -> bottom, last right
-            (1, -1, true) => Corner::BottomRight, // right -> top, last top
-            (1, -1, false) => Corner::TopLeft, // right -> top, last right
-            _ => unreachable!(),
-        }
-    }
-
-    fn draw_one_rounded_corner_rect(painter: &Painter, rect: Rect, corner: Corner) {
-        let corners = corner.get_corner_radius();
-
-        painter.rect_filled(rect, corners, BODY_COLOR);
     }
 
     fn generate_fruit(&mut self) {
@@ -378,7 +338,7 @@ impl Snake {
             }
         };
 
-        let corner = match (old_head.direction, self.direction) {
+        old_head.corner = match (old_head.direction, self.direction) {
             (Direction::Up, Direction::Left) => Corner::TopRight,
             (Direction::Up, Direction::Right) => Corner::TopLeft,
             (Direction::Down, Direction::Right) => Corner::BottomLeft,
@@ -394,7 +354,7 @@ impl Snake {
             old_head.direction = self.direction;
         }
 
-        Some(BodyPart::new(x, y, self.direction, corner))
+        Some(BodyPart::new(x, y, self.direction))
     }
 
     fn step(&mut self) {
