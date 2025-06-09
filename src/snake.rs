@@ -12,7 +12,7 @@ const RADIUS: f32 = 10.0;
 const APPLE_COLOR: Color32 = Color32::RED;
 const BODY_COLOR: Color32 = Color32::YELLOW;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Direction {
     Left,
     Right,
@@ -20,16 +20,44 @@ enum Direction {
     Down,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Corner {
     TopLeft,
     TopRight,
     BottomLeft,
     BottomRight,
+    None,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+struct BodyPart {
+    x: u32,
+    y: u32,
+    direction: Direction,
+    corner: Corner,
+}
+
+impl BodyPart {
+    fn new(x: u32, y: u32, direction: Direction, corner: Corner) -> Self {
+        Self {
+            x,
+            y,
+            direction,
+            corner,
+        }
+    }
+
+    fn position(&self) -> (u32, u32) {
+        (self.x, self.y)
+    }
+
+    fn position_eq(&self, other: &BodyPart) -> bool {
+        self.x == other.x && self.y == other.y
+    }
 }
 
 pub struct Snake {
-    body: VecDeque<(u32, u32)>,
+    body: VecDeque<BodyPart>,
     apple: (u32, u32),
     direction: Direction,
     last_update: Instant,
@@ -54,13 +82,13 @@ impl Default for Snake {
         let middle = GRID_SIZE as u32 / 2;
         snake
             .body
-            .push_front((middle, middle + 1));
+            .push_front(BodyPart::new(middle, middle + 1, Direction::Up, Corner::None));
         snake
             .body
-            .push_front((middle, middle));
+            .push_front(BodyPart::new(middle, middle, Direction::Up, Corner::None));
         snake
             .body
-            .push_front((middle, middle - 1));
+            .push_front(BodyPart::new(middle, middle - 1, Direction::Up, Corner::None));
         snake.generate_fruit();
         snake
     }
@@ -124,6 +152,18 @@ impl App for Snake {
 
             let cell_size = rect.width().min(rect.height()) / GRID_SIZE as f32;
 
+            for body_part in self.body.clone().iter() {
+                let x = rect.left() + body_part.x as f32 * cell_size;
+                let y = rect.top() + body_part.y as f32 * cell_size;
+
+                let cell = Rect::from_min_size(
+                    pos2(x, y),
+                    vec2(cell_size, cell_size),
+                );
+
+                self.paint_body(&painter, body_part, cell);
+            }
+
             for i in 0..GRID_SIZE as u32 {
                 for j in 0..GRID_SIZE as u32 {
                     let x = rect.left() + j as f32 * cell_size;
@@ -136,10 +176,6 @@ impl App for Snake {
 
                     if self.apple == (j, i) {
                         painter.circle_filled(cell.center(), cell_size / 2.0, APPLE_COLOR);
-                    }
-
-                    if self.body.contains(&(j, i)) {
-                        self.paint_body(&painter, j, i, cell);
                     }
                 }
             }
@@ -182,11 +218,11 @@ impl Snake {
         );
     }
 
-    fn paint_body(&mut self, painter: &Painter, x: u32, y: u32, mut rect: Rect) {
+    fn paint_body(&mut self, painter: &Painter, body_part: &BodyPart, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
         let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
-        if (x, y) == *front {
+        if *body_part == *front {
             match self.direction {
                 Direction::Up => rect.min.y += offset,
                 Direction::Down => rect.max.y -= offset,
@@ -196,21 +232,21 @@ impl Snake {
 
             painter.rect_filled(rect, 0.0, BODY_COLOR);
 
-            let succ = self.body[1];
-            if front.0 == succ.0 {
+            let succ = &self.body[1];
+            if front.x == succ.x {
                 Snake::paint_lr_border(painter, rect);
             } else {
                 Snake::paint_tb_border(painter, rect);
             }
-        } else if (x, y) == *back {
-            let prev = self.body[self.body.len() - 2];
+        } else if *body_part == *back {
+            let prev = &self.body[self.body.len() - 2];
             if !self.growing {
                 self.growing = false;
-                let dir = if prev.0 < x {
+                let dir = if prev.x < body_part.x {
                     Direction::Left
-                } else if prev.0 > x {
+                } else if prev.x > body_part.x {
                     Direction::Right
-                } else if prev.1 < y {
+                } else if prev.y < body_part.y {
                     Direction::Up
                 } else {
                     Direction::Down
@@ -223,22 +259,22 @@ impl Snake {
                 };
             }
             painter.rect_filled(rect, 0.0, BODY_COLOR);
-            if back.0 == prev.0 {
+            if back.x == prev.x {
                 Snake::paint_lr_border(painter, rect);
             } else {
                 Snake::paint_tb_border(painter, rect);
             }
         } else {
             // bend
-            if let Some(index) = self.body.iter().position(|&r| r == (x, y)) {
-                let prev = self.body[index - 1];
-                let succ = self.body[index + 1];
-                let current = self.body[index];
+            if let Some(index) = self.body.iter().position(|r| *r == *body_part) {
+                let prev = &self.body[index - 1];
+                let succ = &self.body[index + 1];
+                let current = &self.body[index];
 
-                if prev.0 == succ.0 && prev.1 != succ.1 {
+                if prev.x == succ.x && prev.y != succ.y {
                     Snake::paint_lr_border(painter, rect);
                     painter.rect_filled(rect, 0.0, BODY_COLOR);
-                } else if prev.1 == succ.1 && prev.0 != succ.0 {
+                } else if prev.y == succ.y && prev.x != succ.x {
                     Snake::paint_tb_border(painter, rect);
                     painter.rect_filled(rect, 0.0, BODY_COLOR);
                 } else {
@@ -249,10 +285,10 @@ impl Snake {
         }
     }
 
-    fn get_corner(prev: &(u32, u32), current: &(u32, u32), succ: &(u32, u32)) -> Corner {
-        let dx = prev.0 as i32 - succ.0 as i32;
-        let dy = prev.1 as i32 - succ.1 as i32;
-        let last_dir_vertical = current.0 == prev.0;
+    fn get_corner(prev: &BodyPart, current: &BodyPart, succ: &BodyPart) -> Corner {
+        let dx = prev.x as i32 - succ.x as i32;
+        let dy = prev.y as i32 - succ.y as i32;
+        let last_dir_vertical = current.x == prev.x;
 
         match (dx.signum(), dy.signum(), last_dir_vertical) {
             (-1, -1, true) => BottomLeft, // left -> top, last top
@@ -293,6 +329,7 @@ impl Snake {
                 sw: 0.0,
                 se: RADIUS,
             },
+            Corner::None => CornerRadiusF32::default(),
         };
 
         painter.rect_filled(rect, rounding, BODY_COLOR);
@@ -304,7 +341,7 @@ impl Snake {
         loop {
             let x = rng.random_range(0..GRID_SIZE as u32);
             let y = rng.random_range(0..GRID_SIZE as u32);
-            if !self.body.contains(&(x, y)) {
+            if !self.body.iter().any(|b| b.position() == (x, y)) {
                 self.apple = (x, y);
                 break;
             }
@@ -312,59 +349,51 @@ impl Snake {
     }
 
     fn step(&mut self) {
-        let (x, y) = self.body.front().copied().unwrap();
-
-        // with wraparound
-        // let new_head = match self.direction {
-        //     Direction::Left => ((x + GRID_SIZE as u32 - 1) % GRID_SIZE as u32, y),
-        //     Direction::Right => ((x + 1) % GRID_SIZE as u32, y),
-        //     Direction::Up => (x, (y + GRID_SIZE as u32 - 1) % GRID_SIZE as u32),
-        //     Direction::Down => (x, (y + 1) % GRID_SIZE as u32),
-        // };
+        let bodypart = self.body.front().unwrap();
 
         if let Some(direction) = self.directions_queue.pop_front() {
             self.direction = direction;
         }
 
-        let new_head = match self.direction {
+        let (x, y) = match self.direction {
             Direction::Left => {
-                if x == 0 {
+                if bodypart.x == 0 {
                     self.game_over = true;
                     return;
                 }
-                (x - 1, y)
+                (bodypart.x - 1, bodypart.y)
             }
             Direction::Right => {
-                if x + 1 == GRID_SIZE as u32 {
+                if bodypart.x + 1 == GRID_SIZE as u32 {
                     self.game_over = true;
                     return;
                 }
-                (x + 1, y)
+                (bodypart.x + 1, bodypart.y)
             }
             Direction::Up => {
-                if y == 0 {
+                if bodypart.y == 0 {
                     self.game_over = true;
                     return;
                 }
-                (x, y - 1)
+                (bodypart.x, bodypart.y - 1)
             }
             Direction::Down => {
-                if y + 1 == GRID_SIZE as u32 {
+                if bodypart.y + 1 == GRID_SIZE as u32 {
                     self.game_over = true;
                     return;
                 }
-                (x, y + 1)
+                (bodypart.x, bodypart.y + 1)
             }
         };
 
-        if self.body.contains(&new_head) && self.body.back().unwrap() != &new_head {
+        let new_head = BodyPart::new(x, y, self.direction, Corner::None);
+
+        if self.body.iter().any(|b| b.position_eq(&new_head)) && !self.body.back().unwrap().position_eq(&new_head) {
             self.game_over = true;
             return;
         }
 
-        self.body.push_front(new_head);
-
-        if new_head == self.apple {
+        if new_head.position() == self.apple {
             self.score += 1;
             self.generate_fruit();
             self.growing = true;
@@ -374,6 +403,8 @@ impl Snake {
         } else {
             self.growing = false;
         }
+
+        self.body.push_front(new_head);
     }
 
     fn queue_direction(&mut self, dir: Direction) {
