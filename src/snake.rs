@@ -10,6 +10,8 @@ const FRAME_MS: u64 = 130;
 const RADIUS: f32 = 10.0;
 const APPLE_COLOR: Color32 = Color32::RED;
 const BODY_COLOR: Color32 = Color32::YELLOW;
+const BACKGROUND_COLOR: Color32 = Color32::from_gray(27);
+const STROKE_WEIGHT: f32 = 1.0;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Direction {
@@ -166,7 +168,7 @@ impl App for Snake {
             if self.game_over {
                 let screen_rect = ui.max_rect();
                 ui.painter()
-                    .rect_filled(screen_rect, 0.0, Color32::from_black_alpha(150));
+                    .rect_filled(screen_rect, 0.0, BACKGROUND_COLOR);
 
                 egui::Area::new(Id::from("game_over"))
                     .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -188,7 +190,7 @@ impl App for Snake {
                     pos2(rect.left(), rect.top()),
                     vec2(min, min),
                 );
-                painter.rect_stroke(wrapping_rect, 0.0, Stroke::new(1.0, Color32::from_gray(0)), StrokeKind::Outside);
+                painter.rect_stroke(wrapping_rect, 0.0, Stroke::new(STROKE_WEIGHT, Color32::from_gray(0)), StrokeKind::Outside);
             }
 
             let cell_size = rect.width().min(rect.height()) / GRID_SIZE as f32;
@@ -228,11 +230,11 @@ impl Snake {
 
         painter.line_segment(
             [egui::pos2(x0, y0), egui::pos2(x0, y1)],
-            Stroke::new(1.0, Color32::BLACK),
+            Stroke::new(STROKE_WEIGHT, BACKGROUND_COLOR),
         );
         painter.line_segment(
             [egui::pos2(x1, y0), egui::pos2(x1, y1)],
-            Stroke::new(1.0, Color32::BLACK),
+            Stroke::new(STROKE_WEIGHT, BACKGROUND_COLOR),
         );
     }
 
@@ -244,12 +246,37 @@ impl Snake {
 
         painter.line_segment(
             [egui::pos2(x0, y0), egui::pos2(x1, y0)],
-            Stroke::new(1.0, Color32::BLACK),
+            Stroke::new(STROKE_WEIGHT, BACKGROUND_COLOR),
         );
         painter.line_segment(
             [egui::pos2(x0, y1), egui::pos2(x1, y1)],
-            Stroke::new(1.0, Color32::BLACK),
+            Stroke::new(STROKE_WEIGHT, BACKGROUND_COLOR),
         );
+    }
+
+    fn paint_bend_border(painter: &Painter, rect: Rect, corner: &Corner) {
+        let y0 = rect.top();
+        let y1 = rect.bottom();
+        let x0 = rect.left();
+        let x1 = rect.right();
+        let radius_offset = RADIUS / 2.0;
+        let half_stroke = STROKE_WEIGHT / 2.0;
+
+        let (pos1, pos2) = match corner {
+            Corner::TopLeft => ([egui::pos2(x0 + radius_offset, y0 - half_stroke), egui::pos2(x1, y0 - half_stroke)],
+                                [egui::pos2(x0 - half_stroke, y0 + radius_offset), egui::pos2(x0 - half_stroke, y1)]),
+            Corner::BottomLeft => ([egui::pos2(x0 + radius_offset, y1 + half_stroke), egui::pos2(x1, y1 + half_stroke)],
+                                   [egui::pos2(x0 - half_stroke, y0), egui::pos2(x0 - half_stroke, y1 - radius_offset)]),
+            Corner::TopRight => ([egui::pos2(x0, y0 - half_stroke), egui::pos2(x1 - radius_offset, y0 - half_stroke)],
+                                 [egui::pos2(x1 + half_stroke, y0 + radius_offset), egui::pos2(x1 + half_stroke, y1)]),
+            Corner::BottomRight => ([egui::pos2(x0, y1 + half_stroke), egui::pos2(x1-radius_offset, y1 + half_stroke)],
+                                    [egui::pos2(x1 + half_stroke, y0), egui::pos2(x1 + half_stroke, y1 - radius_offset)]),
+            _ => unreachable!(),
+        };
+
+        let stroke = Stroke::new(STROKE_WEIGHT, BACKGROUND_COLOR);
+        painter.line_segment(pos1, stroke);
+        painter.line_segment(pos2, stroke);
     }
 
     fn paint_body(&self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
@@ -284,6 +311,8 @@ impl Snake {
             } else {
                 Snake::paint_tb_border(painter, rect);
             }
+        } else {
+            Snake::paint_bend_border(painter, rect, &bodypart.corner);
         }
     }
 
