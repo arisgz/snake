@@ -23,10 +23,6 @@ impl Direction {
     fn is_vertical(self) -> bool {
         self == Direction::Down || self == Direction::Up
     }
-
-    fn is_horizontal(self) -> bool {
-        self == Direction::Left || self == Direction::Right
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -84,7 +80,7 @@ impl BodyPart {
             x,
             y,
             direction,
-            corner:Corner::None,
+            corner: Corner::None,
         }
     }
 
@@ -94,6 +90,10 @@ impl BodyPart {
 
     fn position_eq(&self, other: &BodyPart) -> bool {
         self.x == other.x && self.y == other.y
+    }
+
+    fn is_bend(&self) -> bool {
+        self.corner != Corner::None
     }
 }
 
@@ -252,7 +252,7 @@ impl Snake {
         );
     }
 
-    fn paint_body(& self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
+    fn paint_body(&self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
         let front = self.body.front().unwrap();
         let back = self.body.back().unwrap();
         let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
@@ -265,12 +265,6 @@ impl Snake {
             };
 
             painter.rect_filled(rect, 0.0, BODY_COLOR);
-
-            if bodypart.direction.is_vertical() {
-                Snake::paint_lr_border(painter, rect);
-            } else {
-                Snake::paint_tb_border(painter, rect);
-            }
         } else if *bodypart == *back {
             if !self.growing {
                 match bodypart.direction {
@@ -281,13 +275,15 @@ impl Snake {
                 };
             }
             painter.rect_filled(rect, 0.0, BODY_COLOR);
+        } else {
+            painter.rect_filled(rect, bodypart.corner.get_corner_radius(), BODY_COLOR);
+        }
+        if !bodypart.is_bend() {
             if bodypart.direction.is_vertical() {
                 Snake::paint_lr_border(painter, rect);
             } else {
                 Snake::paint_tb_border(painter, rect);
             }
-        } else {
-            painter.rect_filled(rect, bodypart.corner.get_corner_radius(), BODY_COLOR);
         }
     }
 
