@@ -399,8 +399,10 @@ impl Snake {
             self.game_over = true;
             return;
         }
-
-        if new_head.position() == self.apple {
+        
+        self.body.push_front(new_head);
+        
+        if self.body.front().unwrap().position() == self.apple {
             self.score += 1;
             self.generate_fruit();
             self.growing = true;
@@ -410,8 +412,6 @@ impl Snake {
         } else {
             self.growing = false;
         }
-
-        self.body.push_front(new_head);
     }
 
     fn queue_direction(&mut self, dir: Direction) {
