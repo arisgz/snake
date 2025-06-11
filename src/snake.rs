@@ -139,19 +139,7 @@ impl Default for Snake {
 
 impl App for Snake {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        ctx.input(|input| {
-            if input.key_pressed(egui::Key::ArrowLeft) {
-                self.queue_direction(Direction::Left);
-            } else if input.key_pressed(egui::Key::ArrowRight) {
-                self.queue_direction(Direction::Right);
-            } else if input.key_pressed(egui::Key::ArrowUp) {
-                self.queue_direction(Direction::Up);
-            } else if input.key_pressed(egui::Key::ArrowDown) {
-                self.queue_direction(Direction::Down);
-            } else if input.key_pressed(egui::Key::R) {
-                *self = Snake::default();
-            }
-        });
+        self.handle_input(ctx);
 
         let now = Instant::now();
         if !self.game_over && now - self.last_update >= Duration::from_millis(FRAME_MS) {
@@ -222,6 +210,21 @@ impl App for Snake {
 }
 
 impl Snake {
+    fn handle_input(&mut self, ctx: &Context) {
+        ctx.input(|input| {
+            if input.key_pressed(egui::Key::ArrowLeft) {
+                self.queue_direction(Direction::Left);
+            } else if input.key_pressed(egui::Key::ArrowRight) {
+                self.queue_direction(Direction::Right);
+            } else if input.key_pressed(egui::Key::ArrowUp) {
+                self.queue_direction(Direction::Up);
+            } else if input.key_pressed(egui::Key::ArrowDown) {
+                self.queue_direction(Direction::Down);
+            } else if input.key_pressed(egui::Key::R) {
+                *self = Snake::default();
+            }
+        });
+    }
     fn paint_lr_border(painter: &Painter, rect: Rect) {
         let y0 = rect.top();
         let y1 = rect.bottom();
