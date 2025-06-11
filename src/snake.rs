@@ -183,17 +183,8 @@ impl App for Snake {
 
             let cell_size = rect.width().min(rect.height()) / GRID_SIZE as f32;
 
-            for body_part in &self.body {
-                let x = rect.left() + body_part.x as f32 * cell_size;
-                let y = rect.top() + body_part.y as f32 * cell_size;
+            self.paint_body(&painter, cell_size, &rect);
 
-                let cell = Rect::from_min_size(
-                    pos2(x, y),
-                    vec2(cell_size, cell_size),
-                );
-
-                self.paint_body(&painter, body_part, cell);
-            }
 
             let x = rect.left() + self.apple.0 as f32 * cell_size;
             let y = rect.top() + self.apple.1 as f32 * cell_size;
@@ -272,7 +263,7 @@ impl Snake {
                                    [egui::pos2(x0 - half_stroke, y0), egui::pos2(x0 - half_stroke, y1 - radius_offset)]),
             Corner::TopRight => ([egui::pos2(x0, y0 - half_stroke), egui::pos2(x1 - radius_offset, y0 - half_stroke)],
                                  [egui::pos2(x1 + half_stroke, y0 + radius_offset), egui::pos2(x1 + half_stroke, y1)]),
-            Corner::BottomRight => ([egui::pos2(x0, y1 + half_stroke), egui::pos2(x1-radius_offset, y1 + half_stroke)],
+            Corner::BottomRight => ([egui::pos2(x0, y1 + half_stroke), egui::pos2(x1 - radius_offset, y1 + half_stroke)],
                                     [egui::pos2(x1 + half_stroke, y0), egui::pos2(x1 + half_stroke, y1 - radius_offset)]),
             _ => unreachable!(),
         };
@@ -282,40 +273,60 @@ impl Snake {
         painter.line_segment(pos2, stroke);
     }
 
-    fn paint_body(&self, painter: &Painter, bodypart: &BodyPart, mut rect: Rect) {
-        let front = self.body.front().unwrap();
-        let back = self.body.back().unwrap();
-        let offset = rect.width() - ((Instant::now() - self.last_update).as_millis() as f32 * rect.width() / FRAME_MS as f32);
-        if *bodypart == *front {
-            match bodypart.direction {
-                Direction::Up => rect.min.y += offset,
-                Direction::Down => rect.max.y -= offset,
-                Direction::Left => rect.min.x += offset,
-                Direction::Right => rect.max.x -= offset,
-            };
+    fn paint_front(painter: &Painter, bodypart: &BodyPart, cell: &mut Rect, offset: f32) {
+        match bodypart.direction {
+            Direction::Up => cell.min.y += offset,
+            Direction::Down => cell.max.y -= offset,
+            Direction::Left => cell.min.x += offset,
+            Direction::Right => cell.max.x -= offset,
+        };
 
-            painter.rect_filled(rect, 0.0, BODY_COLOR);
-        } else if *bodypart == *back {
-            if !self.growing {
-                match bodypart.direction {
-                    Direction::Up => rect.max.y += offset - rect.width(),
-                    Direction::Down => rect.min.y -= offset - rect.width(),
-                    Direction::Left => rect.max.x += offset - rect.width(),
-                    Direction::Right => rect.min.x -= offset - rect.width(),
-                };
-            }
-            painter.rect_filled(rect, 0.0, BODY_COLOR);
-        } else {
-            painter.rect_filled(rect, bodypart.corner.get_corner_radius(), BODY_COLOR);
+        painter.rect_filled(*cell, 0.0, BODY_COLOR);
+    }
+
+    fn paint_back(&self, painter: &Painter, bodypart: &BodyPart, cell: &mut Rect, offset: f32) {
+        if !self.growing {
+            match bodypart.direction {
+                Direction::Up => cell.max.y += offset - cell.width(),
+                Direction::Down => cell.min.y -= offset - cell.width(),
+                Direction::Left => cell.max.x += offset - cell.width(),
+                Direction::Right => cell.min.x -= offset - cell.width(),
+            };
         }
-        if !bodypart.is_bend() {
-            if bodypart.direction.is_vertical() {
-                Snake::paint_lr_border(painter, rect);
+
+        painter.rect_filled(*cell, 0.0, BODY_COLOR);
+    }
+
+    fn paint_body(&self, painter: &Painter, cell_size: f32, rect: &Rect) {
+        for bodypart in &self.body {
+            let x = rect.left() + bodypart.x as f32 * cell_size;
+            let y = rect.top() + bodypart.y as f32 * cell_size;
+
+            let mut cell = Rect::from_min_size(
+                pos2(x, y),
+                vec2(cell_size, cell_size),
+            );
+
+            let front = self.body.front().unwrap();
+            let back = self.body.back().unwrap();
+            let offset = cell.width() - ((Instant::now() - self.last_update).as_millis() as f32 * cell.width() / FRAME_MS as f32);
+            if *bodypart == *front {
+                Snake::paint_front(painter, bodypart, &mut cell, offset);
+            } else if *bodypart == *back {
+                self.paint_back(painter, bodypart, &mut cell, offset);
             } else {
-                Snake::paint_tb_border(painter, rect);
+                painter.rect_filled(cell, bodypart.corner.get_corner_radius(), BODY_COLOR);
             }
-        } else {
-            Snake::paint_bend_border(painter, rect, &bodypart.corner);
+
+            if !bodypart.is_bend() {
+                if bodypart.direction.is_vertical() {
+                    Snake::paint_lr_border(painter, cell);
+                } else {
+                    Snake::paint_tb_border(painter, cell);
+                }
+            } else {
+                Snake::paint_bend_border(painter, cell, &bodypart.corner);
+            }
         }
     }
 
@@ -402,9 +413,9 @@ impl Snake {
             self.game_over = true;
             return;
         }
-        
+
         self.body.push_front(new_head);
-        
+
         if self.body.front().unwrap().position() == self.apple {
             self.score += 1;
             self.generate_fruit();
