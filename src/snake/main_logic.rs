@@ -1,27 +1,8 @@
-use eframe::egui;
-use eframe::egui::Context;
 use rand::Rng;
 use crate::snake::bodypart::{BodyPart, Corner, Direction};
 use crate::snake::{Snake, GRID_SIZE};
 
 impl Snake {
-    pub(super) fn handle_input(&mut self, ctx: &Context) {
-        ctx.input(|input| {
-            if input.key_pressed(egui::Key::ArrowLeft) {
-                self.queue_direction(Direction::Left);
-            } else if input.key_pressed(egui::Key::ArrowRight) {
-                self.queue_direction(Direction::Right);
-            } else if input.key_pressed(egui::Key::ArrowUp) {
-                self.queue_direction(Direction::Up);
-            } else if input.key_pressed(egui::Key::ArrowDown) {
-                self.queue_direction(Direction::Down);
-            } else if input.key_pressed(egui::Key::R) {
-                *self = Snake::default();
-            }
-        });
-    }
-
-
     pub(super) fn generate_fruit(&mut self) {
         let mut rng = rand::rng();
 
@@ -120,7 +101,7 @@ impl Snake {
         }
     }
 
-    fn queue_direction(&mut self, dir: Direction) {
+    pub(super) fn queue_direction(&mut self, dir: Direction) {
         let last_dir = self.directions_queue.back().copied().unwrap_or(self.direction);
 
         let is_opposite = matches!(

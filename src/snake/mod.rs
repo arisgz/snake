@@ -1,6 +1,6 @@
-mod graphics;
 mod bodypart;
 mod main_logic;
+mod gui;
 
 use eframe::egui::{Color32};
 use std::collections::VecDeque;
